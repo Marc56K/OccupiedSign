@@ -1,0 +1,8 @@
+﻿AssetConvert/.vs
+AssetConvert/ImageConverter/bin
+AssetConvert/ImageConverter/obj
+Display/.vscode
+*.png
+*.pdf
+*.psd
+Images
