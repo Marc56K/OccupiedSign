@@ -32,7 +32,8 @@ bool getSensorData(SensorData& sensorData)
 {
     bool receivedData = false;
     digitalWrite(RF24_VCC_PIN, HIGH);
-    {  
+    {
+        delay(10);
         radio.begin();
         radio.setRetries(15, 15);
         radio.setDataRate(RF24_250KBPS);
@@ -72,7 +73,7 @@ bool getSensorData(SensorData& sensorData)
             }
 
             uint8_t pipe = 0;
-            while (radio.available(&pipe))
+            for (uint32_t i = 0; radio.available(&pipe) && i < NUM_SENSORS; i++)
             { 
                 uint8_t sensorIdx = pipe - 1;
                 sensorOfflineCounter[sensorIdx] = 0;

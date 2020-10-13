@@ -30,24 +30,30 @@ int32_t getSensorState()
     int32_t result = 0;
     digitalWrite(TOF_VCC_PIN, HIGH);
     {
-        VL53L0X sensor;
-        Wire.begin();
-        if (sensor.init())
+        int32_t maxDist = 0;
+        for (uint32_t i = 0; i < 3; i++)
         {
-            sensor.setTimeout(500);
-            sensor.writeReg(0x80, 0x01);
-            int32_t dist = (int32_t)sensor.readRangeSingleMillimeters();
-            dist = min(2000, dist);
-            Serial.print(dist);
-            Serial.println("mm");
-            if (dist < MAX_DISTANCE_MM)
+            VL53L0X sensor;
+            Wire.begin();
+            if (sensor.init())
             {
-                result = 1;
+                sensor.setTimeout(500);
+                sensor.writeReg(0x80, 0x01);
+                int32_t dist = (int32_t)sensor.readRangeSingleMillimeters();
+                dist = min(2000, dist);
+                Serial.print(dist);
+                Serial.println("mm");
+                maxDist = max(maxDist, dist);
+            }
+            else
+            {
+                Serial.println("Sensor init failed");
             }
         }
-        else
+        
+        if (maxDist > 0 && maxDist < MAX_DISTANCE_MM)
         {
-            Serial.println("Sensor init failed");
+            result = 1;
         }
     }
     digitalWrite(TOF_VCC_PIN, LOW);
