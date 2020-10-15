@@ -53,7 +53,7 @@ bool getSensorData(SensorData& sensorData)
         radio.startListening();
         delay(10);
 
-        if (minOfflineCount > 2)
+        if (minOfflineCount > 3)
         {
             sensorData.State = SensorState::FREE;
         }

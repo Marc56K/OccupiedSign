@@ -44,6 +44,10 @@ int32_t getSensorState()
                 Serial.print(dist);
                 Serial.println("mm");
                 maxDist = max(maxDist, dist);
+                if (dist >= MAX_DISTANCE_MM)
+                {
+                    break;
+                }
             }
             else
             {
