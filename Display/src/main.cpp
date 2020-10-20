@@ -6,7 +6,6 @@
 #include <SPI.h>
 
 #define LED_PIN 2
-#define RF24_VCC_PIN A0
 #define RF24_CE_PIN 9
 #define RF24_CSN_PIN 10
 #define DISP_VCC_PIN A1
@@ -19,8 +18,7 @@ void setup()
 {
     Serial.begin(9600);
 
-    pinMode(LED_PIN, OUTPUT);  
-    pinMode(RF24_VCC_PIN, OUTPUT);
+    pinMode(LED_PIN, OUTPUT);
 
     for (uint8_t sensor = 0; sensor < NUM_SENSORS; sensor++)
         sensorOfflineCounter[sensor] = 0;
@@ -28,78 +26,76 @@ void setup()
     Serial.println("started");
 }
 
-bool getSensorData(SensorData& sensorData)
+bool getSensorData(SensorData &sensorData)
 {
     bool receivedData = false;
-    digitalWrite(RF24_VCC_PIN, HIGH);
+
+    radio.begin();
+    radio.setRetries(15, 15);
+    radio.setDataRate(RF24_250KBPS);
+    radio.setPALevel(RF24_PA_MAX);
+    radio.setChannel(RF24_CHANNEL);
+    radio.setPayloadSize(sizeof(int32_t));
+
+    uint32_t minOfflineCount = UINT32_MAX;
+    for (uint8_t sensor = 0; sensor < NUM_SENSORS; sensor++)
     {
-        delay(10);
-        radio.begin();
-        radio.setRetries(15, 15);
-        radio.setDataRate(RF24_250KBPS);
-        radio.setPALevel(RF24_PA_MAX);
-        radio.setChannel(RF24_CHANNEL);
-        radio.setPayloadSize(sizeof(int32_t));
-
-        uint32_t minOfflineCount = UINT32_MAX;
-        for (uint8_t sensor = 0; sensor < NUM_SENSORS; sensor++)
-        {
-            uint64_t address = static_cast<uint64_t>(RF24_BASE_ADDRESS) + sensor;
-            uint8_t pipe = sensor + 1;
-            radio.openReadingPipe(pipe, address);
-            sensorOfflineCounter[sensor] = min(sensorOfflineCounter[sensor] + 1, 2 * HEARTBEAT_INTERVAL);
-            minOfflineCount = min(minOfflineCount, sensorOfflineCounter[sensor]);
-        }
-        radio.startListening();
-        delay(10);
-
-        if (minOfflineCount > 3)
-        {
-            sensorData.State = SensorState::FREE;
-        }
-        
-        uint32_t retries = 1;
-        if (sensorData.State == SensorState::BUSY)
-        {
-            retries = 5;
-        }
-
-        for (uint32_t retry = 0; !receivedData && retry < retries; retry++)
-        {
-            if (retry > 0)
-            {
-                Serial.print(".");
-                delay(400);
-            }
-
-            uint8_t pipe = 0;
-            for (uint32_t i = 0; radio.available(&pipe) && i < NUM_SENSORS; i++)
-            { 
-                uint8_t sensorIdx = pipe - 1;
-                sensorOfflineCounter[sensorIdx] = 0;
-
-                int32_t sensorState = 0;
-                radio.read(&sensorState, sizeof(sensorState));
-
-                if (sensorState == 0)
-                {
-                    Serial.println(String("Sensor") + String((int)sensorIdx) + String(": Heartbeat"));
-                }
-                else if (sensorState == 1)
-                {
-                    Serial.println(String("Sensor") + String((int)sensorIdx) + String(": Active"));
-                    sensorData.State = SensorState::BUSY;
-                    receivedData = true;
-                }
-            }
-        }
-
-        if (!receivedData)
-        {
-            Serial.println("no data");
-        }        
+        uint64_t address = static_cast<uint64_t>(RF24_BASE_ADDRESS) + sensor;
+        uint8_t pipe = sensor + 1;
+        radio.openReadingPipe(pipe, address);
+        sensorOfflineCounter[sensor] = min(sensorOfflineCounter[sensor] + 1, 2 * HEARTBEAT_INTERVAL);
+        minOfflineCount = min(minOfflineCount, sensorOfflineCounter[sensor]);
     }
-    digitalWrite(RF24_VCC_PIN, LOW);
+    radio.startListening();
+    delay(10);
+
+    if (minOfflineCount > 3)
+    {
+        sensorData.State = SensorState::FREE;
+    }
+
+    uint32_t retries = 1;
+    if (sensorData.State == SensorState::BUSY)
+    {
+        retries = 5;
+    }
+
+    for (uint32_t retry = 0; !receivedData && retry < retries; retry++)
+    {
+        if (retry > 0)
+        {
+            Serial.print(".");
+            delay(400);
+        }
+
+        uint8_t pipe = 0;
+        for (uint32_t i = 0; radio.available(&pipe) && i < NUM_SENSORS; i++)
+        {
+            uint8_t sensorIdx = pipe - 1;
+            sensorOfflineCounter[sensorIdx] = 0;
+
+            int32_t sensorState = 0;
+            radio.read(&sensorState, sizeof(sensorState));
+
+            if (sensorState == 0)
+            {
+                Serial.println(String("Sensor") + String((int)sensorIdx) + String(": Heartbeat"));
+            }
+            else if (sensorState == 1)
+            {
+                Serial.println(String("Sensor") + String((int)sensorIdx) + String(": Active"));
+                sensorData.State = SensorState::BUSY;
+                receivedData = true;
+            }
+        }
+    }
+
+    if (!receivedData)
+    {
+        Serial.println("no data");
+    }
+
+    radio.powerDown();
 
     sensorData.Message = "";
     for (uint8_t sensor = 0; sensor < NUM_SENSORS; sensor++)
@@ -114,7 +110,7 @@ bool getSensorData(SensorData& sensorData)
 }
 
 SensorData lastSensorData;
-void loop() 
+void loop()
 {
     digitalWrite(LED_PIN, HIGH);
     {
