@@ -17,6 +17,9 @@ uint32_t updateCounter = 0;
 void setup()
 {
     Serial.begin(9600);
+    Serial.println("RF24_CHANNEL: " + String(RF24_CHANNEL));
+    Serial.println("SENSOR_IDX: " + String(SENSOR_IDX));
+    Serial.println("MAX_DISTANCE_MM: " + String(MAX_DISTANCE_MM));
 
     pinMode(LED_PIN, OUTPUT);
     pinMode(RF24_VCC_PIN, OUTPUT);
