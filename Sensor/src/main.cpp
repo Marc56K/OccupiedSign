@@ -69,7 +69,7 @@ int32_t getSensorState()
 
 bool sendState(int32_t state)
 {
-    bool success = false;
+    int success = 0;
     digitalWrite(RF24_VCC_PIN, HIGH);
     {
         uint64_t address = static_cast<uint64_t>(RF24_BASE_ADDRESS) + SENSOR_IDX;
@@ -85,20 +85,20 @@ bool sendState(int32_t state)
 
         Serial.print("sending");
         auto endTime = millis() + 20000;
-        while(millis() < endTime)
+        while(millis() < endTime && success < 2)
         {
             Serial.print(".");
             if (radio.write(&state, sizeof(state)))
             {
-                success = true;
-                break;
+                success++;
             }
             delay(1);
         }
-        Serial.println(success ? " success" : " timeout");
+        Serial.println(success > 1 ? " success" : " timeout");
+        radio.powerDown();
     }
     digitalWrite(RF24_VCC_PIN, LOW);
-    return success;
+    return success > 1;
 }
 
 void loop()
