@@ -138,8 +138,9 @@ void Epd::SendDataBuffer(const unsigned char* data, unsigned int size) {
  */
 void Epd::WaitUntilIdle(void) {
 	SendCommand(0x71);
-    while(DigitalRead(busy_pin) == 0) {      //0: busy, 1: idle
-        DelayMs(1);
+    for(int i = 0; i < 100 && DigitalRead(busy_pin) == 0; i++)  //0: busy, 1: idle
+    {     
+        DelayMs(100);
 		SendCommand(0x71);
     }      
 }
@@ -460,7 +461,7 @@ void Epd::DisplayFrame(const unsigned char* frame_buffer, const bool fast) {
     {
       SetFastLut();
       SendCommand(DISPLAY_REFRESH); 
-      DelayMs(2);
+      DelayMs(100);
       WaitUntilIdle();
     }
     else
@@ -498,7 +499,7 @@ void Epd::ClearFrame(const bool fast) {
     {
       SetFastLut();
       SendCommand(DISPLAY_REFRESH); 
-      DelayMs(2);
+      DelayMs(100);
       WaitUntilIdle();
     }
     else
