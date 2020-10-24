@@ -96,6 +96,7 @@ bool getSensorData(SensorData &sensorData)
     }
 
     radio.powerDown();
+    digitalWrite(RF24_CE_PIN, HIGH);
 
     sensorData.Message = "";
     for (uint8_t sensor = 0; sensor < NUM_SENSORS; sensor++)
